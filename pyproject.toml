@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spine-screening-api"
+version = "0.1.0"
+description = "Backend API for the Spine Opportunistic Screening research project"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "numpy==2.3.5",
+    "opencv-python-headless==4.13.0.92",
+    "pydantic-settings",
+    "python-multipart",
+    "timm==1.0.27",
+    "torch==2.12.1",
+    "torchvision==0.27.1",
+    "uvicorn[standard]",
+]
+
+[dependency-groups]
+dev = [
+    "httpx",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "model: runs the real CenterNet checkpoint and full-size warm-up",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
