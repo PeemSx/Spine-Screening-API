@@ -94,3 +94,75 @@ HTTP contracts; inference modules remain independent of FastAPI. `core` owns
 cross-cutting process behavior, while `utils` contains narrow technical helpers.
 Golden and focused tests protect the API pipeline against behavioral drift from
 the canonical research implementation.
+
+## Container deployment
+
+The container listens on port `8000`, runs as non-root user ID `1000`, uses
+CPU-only PyTorch packages, and defaults to production CPU inference with one
+concurrent prediction.
+
+The defaults work without runtime configuration. These environment variables
+can still be supplied when an explicit override is preferred:
+
+```text
+SPINE_API_ENVIRONMENT=production
+SPINE_API_MODEL_DEVICE=cpu
+SPINE_API_INFERENCE_CONCURRENCY=1
+SPINE_API_LOG_LEVEL=INFO
+```
+
+The compact checkpoint at `app/weight/best_center_f1.pt` is copied into the
+container. A successful deployment must return `200` from both:
+
+- `GET /api/v1/health/live`
+- `GET /api/v1/health/ready`
+
+The hosted API remains a research demonstration. Upload only anonymized test
+images and do not use the service for identifiable patient data or diagnosis.
+
+## Cloudflare Quick Tunnel
+
+The development tunnel runs the API and Cloudflare's official `cloudflared`
+container on one private Docker network. It publishes a temporary HTTPS URL
+without requiring a Cloudflare account or exposing port `8000` beyond the local
+machine.
+
+Start the API and tunnel:
+
+```powershell
+docker compose -f compose.tunnel.yaml up --build
+```
+
+Wait for a log message containing a URL like:
+
+```text
+https://random-words.trycloudflare.com
+```
+
+Then test these public URLs:
+
+```text
+https://random-words.trycloudflare.com/api/v1/health/live
+https://random-words.trycloudflare.com/api/v1/health/ready
+https://random-words.trycloudflare.com/docs
+```
+
+To run in the background and follow only the tunnel logs:
+
+```powershell
+docker compose -f compose.tunnel.yaml up --build --detach
+docker compose -f compose.tunnel.yaml logs --follow tunnel
+```
+
+Stop and remove the development containers and network:
+
+```powershell
+docker compose -f compose.tunnel.yaml down
+```
+
+Quick Tunnel URLs change whenever `cloudflared` restarts and have no uptime
+guarantee. They are suitable for Postman and temporary integration testing, not
+production. The API currently has no authentication, so never share its URL
+publicly or upload patient-identifiable images. A stable frontend integration
+will require a named tunnel, application authentication, and explicit CORS
+configuration.

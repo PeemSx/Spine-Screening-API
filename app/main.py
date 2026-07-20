@@ -1,6 +1,7 @@
 """FastAPI application factory."""
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from app import __version__
 from app.api.v1.router import api_router
@@ -25,6 +26,12 @@ def create_app() -> FastAPI:
     )
     register_exception_handlers(application)
     application.include_router(api_router, prefix=settings.api_v1_prefix)
+
+    @application.get("/", include_in_schema=False)
+    async def redirect_to_docs() -> RedirectResponse:
+        """Make the Space root useful when opened in a browser."""
+        return RedirectResponse(url="/docs")
+
     return application
 
 

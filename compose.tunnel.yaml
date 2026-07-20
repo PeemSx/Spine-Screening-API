@@ -1,0 +1,38 @@
+name: spine-screening-tunnel
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: spine-screening-api:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen(
+          'http://127.0.0.1:8000/api/v1/health/ready', timeout=10)
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.7.2
+    restart: unless-stopped
+    env_file:
+      - .env
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+    depends_on:
+      api:
+        condition: service_healthy
+
