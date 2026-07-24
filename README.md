@@ -117,6 +117,17 @@ container. A successful deployment must return `200` from both:
 - `GET /api/v1/health/live`
 - `GET /api/v1/health/ready`
 
+Update the decoder's minimum peak-confidence cutoff without changing learned
+model tensors:
+
+```powershell
+.venv\Scripts\python.exe scripts\update_peak_threshold.py `
+  app\weight\best_center_f1.pt 0.1
+```
+
+Rebuild the API image after changing the artifact so the deployed container
+receives the updated checkpoint.
+
 The hosted API remains a research demonstration. Upload only anonymized test
 images and do not use the service for identifiable patient data or diagnosis.
 

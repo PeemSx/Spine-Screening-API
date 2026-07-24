@@ -18,7 +18,7 @@ class FakeRuntime:
         backbone="hrnet_w18",
         input_size=1024,
         down_ratio=4,
-        peak_threshold=0.05,
+        peak_threshold=0.1,
         topk=50,
         sha256="a" * 64,
         spine_chain=SpineChainConfig(0.18, 0.35, 0.18, 3.0, 3),
