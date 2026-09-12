@@ -131,49 +131,34 @@ receives the updated checkpoint.
 The hosted API remains a research demonstration. Upload only anonymized test
 images and do not use the service for identifiable patient data or diagnosis.
 
-## Cloudflare Quick Tunnel
+## Cloudflare named tunnel
 
-The development tunnel runs the API and Cloudflare's official `cloudflared`
-container on one private Docker network. It publishes a temporary HTTPS URL
-without requiring a Cloudflare account or exposing port `8000` beyond the local
-machine.
+The Compose stack runs the API and Cloudflare's official `cloudflared`
+container on one private Docker network. A remotely managed named tunnel gives
+the API a stable hostname without exposing port `8000` beyond the local machine.
 
-Start the API and tunnel:
-
-```powershell
-docker compose -f compose.tunnel.yaml up --build
-```
-
-Wait for a log message containing a URL like:
+In the Cloudflare dashboard, create or select a named tunnel, add a published
+application route, and set its service URL to `http://api:8000`. From **Add a
+replica**, copy the tunnel token into the ignored local `.env` file:
 
 ```text
-https://random-words.trycloudflare.com
+TUNNEL_TOKEN=<tunnel-token>
 ```
 
-Then test these public URLs:
-
-```text
-https://random-words.trycloudflare.com/api/v1/health/live
-https://random-words.trycloudflare.com/api/v1/health/ready
-https://random-words.trycloudflare.com/docs
-```
-
-To run in the background and follow only the tunnel logs:
+Start the API and named tunnel in the background:
 
 ```powershell
 docker compose -f compose.tunnel.yaml up --build --detach
 docker compose -f compose.tunnel.yaml logs --follow tunnel
 ```
 
-Stop and remove the development containers and network:
+The tunnel should become healthy in Cloudflare and keep the configured public
+hostname across container restarts. Stop and remove the local containers and
+network with:
 
 ```powershell
 docker compose -f compose.tunnel.yaml down
 ```
 
-Quick Tunnel URLs change whenever `cloudflared` restarts and have no uptime
-guarantee. They are suitable for Postman and temporary integration testing, not
-production. The API currently has no authentication, so never share its URL
-publicly or upload patient-identifiable images. A stable frontend integration
-will require a named tunnel, application authentication, and explicit CORS
-configuration.
+The API currently has no authentication. Do not upload patient-identifiable
+images or expose it as a clinical diagnostic service.
