@@ -26,7 +26,8 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
     log_level: str = "INFO"
-    model_path: Path = PROJECT_ROOT / "app" / "weight" / "best_center_f1.pt"
+    model_path: Path = PROJECT_ROOT / "app" / "weight" / "AP_PA_best_center_f1.pt"
+    la_model_path: Path = PROJECT_ROOT / "app" / "weight" / "LA_best_usable_recall.pt"
     model_device: Literal["auto", "cpu", "cuda"] = "auto"
     max_upload_bytes: int = Field(default=20 * 1024 * 1024, gt=0)
     max_image_pixels: int = Field(default=50_000_000, gt=0)

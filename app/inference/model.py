@@ -63,8 +63,11 @@ class CenterNetResNetFPN(nn.Module):
         pretrained: bool = False,
         fpn_channels: int = 128,
         head_channels: int = 128,
+        keypoint_count: int = 4,
     ) -> None:
         super().__init__()
+        if keypoint_count <= 0:
+            raise ValueError("keypoint_count must be positive")
         weights = ResNet34_Weights.DEFAULT if pretrained else None
         backbone = resnet34(weights=weights)
         self.stem = nn.Sequential(
@@ -86,7 +89,7 @@ class CenterNetResNetFPN(nn.Module):
         self.smooth4 = _conv_bn_relu(fpn_channels, fpn_channels)
         self.hm = _make_head(fpn_channels, head_channels, 1, heatmap_head=True)
         self.reg = _make_head(fpn_channels, head_channels, 2)
-        self.wh = _make_head(fpn_channels, head_channels, 8)
+        self.wh = _make_head(fpn_channels, head_channels, keypoint_count * 2)
 
     @staticmethod
     def _upsample_add(high: torch.Tensor, low: torch.Tensor) -> torch.Tensor:
@@ -124,8 +127,11 @@ class CenterNetHRNet(nn.Module):
         branch_channels: int = 64,
         fusion_channels: int = 256,
         head_channels: int = 128,
+        keypoint_count: int = 4,
     ) -> None:
         super().__init__()
+        if keypoint_count <= 0:
+            raise ValueError("keypoint_count must be positive")
         self.backbone = timm.create_model(
             backbone_name,
             pretrained=pretrained,
@@ -147,7 +153,7 @@ class CenterNetHRNet(nn.Module):
         )
         self.hm = _make_head(fusion_channels, head_channels, 1, heatmap_head=True)
         self.reg = _make_head(fusion_channels, head_channels, 2)
-        self.wh = _make_head(fusion_channels, head_channels, 8)
+        self.wh = _make_head(fusion_channels, head_channels, keypoint_count * 2)
 
     def forward(self, inputs: torch.Tensor) -> dict[str, torch.Tensor]:
         features = self.backbone(inputs)
@@ -171,11 +177,19 @@ class CenterNetHRNet(nn.Module):
         }
 
 
-def build_centernet_model(backbone: str = "hrnet_w18", pretrained: bool = False) -> nn.Module:
+def build_centernet_model(
+    backbone: str = "hrnet_w18",
+    pretrained: bool = False,
+    *,
+    keypoint_count: int = 4,
+) -> nn.Module:
     """Build a supported architecture without downloading pretrained weights."""
     if backbone in HRNET_BACKBONES:
-        return CenterNetHRNet(backbone_name=backbone, pretrained=pretrained)
+        return CenterNetHRNet(
+            backbone_name=backbone,
+            pretrained=pretrained,
+            keypoint_count=keypoint_count,
+        )
     if backbone == "resnet34":
-        return CenterNetResNetFPN(pretrained=pretrained)
+        return CenterNetResNetFPN(pretrained=pretrained, keypoint_count=keypoint_count)
     raise ValueError(f"Unsupported CenterNet backbone: {backbone}")
-

@@ -11,11 +11,16 @@ from typing import Any, Protocol
 import torch
 import torch.nn as nn
 
-from app.inference.decoder import decode_to_original
-from app.inference.manifest import ModelManifest, SpineChainConfig
+from app.inference.decoder import decode_six_points_to_original, decode_to_original
+from app.inference.manifest import (
+    LA_KEYPOINT_ORDER,
+    LAModelManifest,
+    ModelManifest,
+    SpineChainConfig,
+)
 from app.inference.model import SUPPORTED_BACKBONES, build_centernet_model
 from app.inference.preprocessing import preprocess_image_bytes
-from app.inference.types import RawInferenceResult
+from app.inference.types import RawInferenceResult, RawSixPointInferenceResult
 
 
 class RuntimeUnavailableError(RuntimeError):
@@ -39,6 +44,25 @@ class InferenceRuntime(Protocol):
     def close(self) -> None: ...
 
     def predict(self, image_bytes: bytes, media_type: str) -> RawInferenceResult: ...
+
+
+class LAInferenceRuntime(Protocol):
+    """Interface required by the LA six-keypoint screening service."""
+
+    @property
+    def ready(self) -> bool: ...
+
+    @property
+    def status_detail(self) -> str: ...
+
+    @property
+    def manifest(self) -> LAModelManifest | None: ...
+
+    def start(self) -> None: ...
+
+    def close(self) -> None: ...
+
+    def predict(self, image_bytes: bytes, media_type: str) -> RawSixPointInferenceResult: ...
 
 
 def file_sha256(path: Path) -> str:
@@ -78,11 +102,12 @@ class CenterNetRuntime:
         device_name: str = "auto",
         max_image_pixels: int = 50_000_000,
         inference_concurrency: int = 1,
+        inference_limiter: threading.BoundedSemaphore | None = None,
     ) -> None:
         self._checkpoint_path = checkpoint_path
         self._device_name = device_name
         self._max_image_pixels = max_image_pixels
-        self._semaphore = threading.BoundedSemaphore(inference_concurrency)
+        self._semaphore = inference_limiter or threading.BoundedSemaphore(inference_concurrency)
         self._model: nn.Module | None = None
         self._manifest: ModelManifest | None = None
         self._device: torch.device | None = None
@@ -256,25 +281,235 @@ class CenterNetRuntime:
         outputs: dict[str, torch.Tensor],
         manifest: ModelManifest,
     ) -> None:
-        output_size = manifest.input_size // manifest.down_ratio
-        expected_shapes = {
-            "hm": (1, 1, output_size, output_size),
-            "reg": (1, 2, output_size, output_size),
-            "wh": (1, 8, output_size, output_size),
-        }
-        if set(outputs) != set(expected_shapes):
-            raise ValueError(f"Unexpected model output keys: {sorted(outputs)}")
-        for name, expected_shape in expected_shapes.items():
-            value = outputs[name]
-            if tuple(value.shape) != expected_shape:
-                raise ValueError(
-                    f"Output '{name}' has shape {tuple(value.shape)}, expected {expected_shape}"
-                )
-            if not bool(torch.isfinite(value).all()):
-                raise ValueError(f"Output '{name}' contains non-finite values")
-        heatmap = outputs["hm"]
-        if float(heatmap.min()) < 0.0 or float(heatmap.max()) > 1.0:
-            raise ValueError("Heatmap output must be within zero and one")
+        _validate_output_tensors(outputs, manifest, keypoint_count=4)
+
+
+def _validate_output_tensors(
+    outputs: dict[str, torch.Tensor],
+    manifest: ModelManifest | LAModelManifest,
+    *,
+    keypoint_count: int,
+) -> None:
+    """Validate CenterNet tensor keys, shapes, finiteness, and heatmap range."""
+    output_size = manifest.input_size // manifest.down_ratio
+    expected_shapes = {
+        "hm": (1, 1, output_size, output_size),
+        "reg": (1, 2, output_size, output_size),
+        "wh": (1, keypoint_count * 2, output_size, output_size),
+    }
+    if set(outputs) != set(expected_shapes):
+        raise ValueError(f"Unexpected model output keys: {sorted(outputs)}")
+    for name, expected_shape in expected_shapes.items():
+        value = outputs[name]
+        if tuple(value.shape) != expected_shape:
+            raise ValueError(
+                f"Output '{name}' has shape {tuple(value.shape)}, expected {expected_shape}"
+            )
+        if not bool(torch.isfinite(value).all()):
+            raise ValueError(f"Output '{name}' contains non-finite values")
+    heatmap = outputs["hm"]
+    if float(heatmap.min()) < 0.0 or float(heatmap.max()) > 1.0:
+        raise ValueError("Heatmap output must be within zero and one")
+
+
+class LACenterNetRuntime:
+    """Strict runtime for the supplied LA six-keypoint training checkpoint."""
+
+    _EXPECTED_CHECKPOINT_KEYS = {
+        "epoch",
+        "model",
+        "keypoint_order",
+        "backbone",
+        "input_size",
+        "down_ratio",
+        "val_metrics",
+        "seed",
+        "batch_size",
+    }
+
+    def __init__(
+        self,
+        checkpoint_path: Path,
+        *,
+        device_name: str = "auto",
+        max_image_pixels: int = 50_000_000,
+        inference_concurrency: int = 1,
+        inference_limiter: threading.BoundedSemaphore | None = None,
+    ) -> None:
+        self._checkpoint_path = checkpoint_path
+        self._device_name = device_name
+        self._max_image_pixels = max_image_pixels
+        self._semaphore = inference_limiter or threading.BoundedSemaphore(inference_concurrency)
+        self._model: nn.Module | None = None
+        self._manifest: LAModelManifest | None = None
+        self._device: torch.device | None = None
+        self._ready = False
+        self._status_detail = "The LA model runtime has not started."
+
+    @property
+    def ready(self) -> bool:
+        return self._ready
+
+    @property
+    def status_detail(self) -> str:
+        return self._status_detail
+
+    @property
+    def manifest(self) -> LAModelManifest | None:
+        return self._manifest
+
+    @property
+    def device(self) -> torch.device | None:
+        return self._device
+
+    def start(self) -> None:
+        """Safely load and strictly validate the LA training checkpoint."""
+        if self._ready:
+            return
+        path = self._checkpoint_path.resolve(strict=True)
+        self._status_detail = "The LA model runtime is loading."
+        try:
+            artifact = torch.load(path, map_location="cpu", weights_only=True)
+            if not isinstance(artifact, Mapping):
+                raise ValueError("LA checkpoint must contain a mapping")
+            manifest = self._parse_manifest(
+                artifact,
+                artifact_sha256=file_sha256(path),
+                checkpoint_stem=path.stem,
+            )
+            state_dict = _mapping(artifact, "model")
+            device = resolve_device(self._device_name)
+            model = build_centernet_model(
+                manifest.backbone,
+                pretrained=False,
+                keypoint_count=6,
+            )
+            model.load_state_dict(state_dict, strict=True)
+            model.to(device)
+            model.eval()
+            self._warm_up(model, device, manifest)
+            self._model = model
+            self._device = device
+            self._manifest = manifest
+            self._ready = True
+            self._status_detail = "The LA model runtime is ready."
+        except Exception:
+            self._model = None
+            self._device = None
+            self._manifest = None
+            self._ready = False
+            self._status_detail = "The LA model runtime failed to start."
+            raise
+
+    def close(self) -> None:
+        """Release process-owned LA model resources."""
+        device = self._device
+        self._model = None
+        self._device = None
+        self._manifest = None
+        self._ready = False
+        self._status_detail = "The LA model runtime is stopped."
+        if device is not None and device.type == "cuda":
+            torch.cuda.empty_cache()
+
+    def predict(self, image_bytes: bytes, media_type: str) -> RawSixPointInferenceResult:
+        """Return six-point candidates in original-image pixel coordinates."""
+        model = self._model
+        device = self._device
+        manifest = self._manifest
+        if not self._ready or model is None or device is None or manifest is None:
+            raise RuntimeUnavailableError(self._status_detail)
+
+        with self._semaphore:
+            image_rgb, tensor, meta = preprocess_image_bytes(
+                image_bytes,
+                input_size=manifest.input_size,
+                max_image_pixels=self._max_image_pixels,
+                device=device,
+            )
+            with torch.inference_mode():
+                outputs = model(tensor)
+            _validate_output_tensors(outputs, manifest, keypoint_count=6)
+            prediction = decode_six_points_to_original(
+                outputs,
+                meta,
+                down_ratio=manifest.down_ratio,
+                peak_threshold=manifest.peak_threshold,
+                topk=manifest.topk,
+            )
+        height, width = image_rgb.shape[:2]
+        return RawSixPointInferenceResult(
+            prediction=prediction,
+            original_width=width,
+            original_height=height,
+            media_type=media_type,
+        )
+
+    @classmethod
+    def _parse_manifest(
+        cls,
+        artifact: Mapping[str, Any],
+        *,
+        artifact_sha256: str,
+        checkpoint_stem: str,
+    ) -> LAModelManifest:
+        actual_keys = set(artifact)
+        if actual_keys != cls._EXPECTED_CHECKPOINT_KEYS:
+            missing = sorted(cls._EXPECTED_CHECKPOINT_KEYS - actual_keys)
+            unexpected = sorted(actual_keys - cls._EXPECTED_CHECKPOINT_KEYS)
+            raise ValueError(
+                f"Unexpected LA checkpoint fields; missing={missing}, unexpected={unexpected}"
+            )
+        epoch = int(artifact["epoch"])
+        backbone = str(artifact["backbone"])
+        input_size = int(artifact["input_size"])
+        down_ratio = int(artifact["down_ratio"])
+        keypoint_order = tuple(artifact["keypoint_order"])
+        if epoch != 33:
+            raise ValueError(f"Expected LA checkpoint epoch 33, got {epoch}")
+        if backbone != "hrnet_w18":
+            raise ValueError(f"Expected LA backbone hrnet_w18, got {backbone}")
+        if input_size != 1024 or down_ratio != 4:
+            raise ValueError("Expected LA input_size=1024 and down_ratio=4")
+        if keypoint_order != LA_KEYPOINT_ORDER:
+            raise ValueError(f"Unexpected LA keypoint order: {keypoint_order}")
+        _mapping(artifact, "model")
+        _mapping(artifact, "val_metrics")
+        return LAModelManifest(
+            model_id=f"{checkpoint_stem}-epoch-{epoch}",
+            artifact_type="spine_centernet_la_six_keypoint_checkpoint",
+            format_version=1,
+            backbone=backbone,
+            input_size=input_size,
+            down_ratio=down_ratio,
+            peak_threshold=0.1,
+            topk=50,
+            sha256=artifact_sha256,
+            checkpoint_epoch=epoch,
+            spine_chain=SpineChainConfig(
+                duplicate_iou_threshold=0.18,
+                duplicate_center_scale=0.35,
+                score_threshold=0.18,
+                score_weight=3.0,
+                min_chain_len=3,
+            ),
+            keypoint_order=keypoint_order,  # type: ignore[arg-type]
+        )
+
+    @staticmethod
+    def _warm_up(
+        model: nn.Module,
+        device: torch.device,
+        manifest: LAModelManifest,
+    ) -> None:
+        dummy = torch.zeros(
+            (1, 3, manifest.input_size, manifest.input_size),
+            dtype=torch.float32,
+            device=device,
+        )
+        with torch.inference_mode():
+            outputs = model(dummy)
+        _validate_output_tensors(outputs, manifest, keypoint_count=6)
 
 
 class UnavailableInferenceRuntime:

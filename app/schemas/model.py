@@ -6,7 +6,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.inference.manifest import ModelManifest
+from app.inference.manifest import LAModelManifest, ModelManifest
 
 
 class SpineChainInfo(BaseModel):
@@ -52,6 +52,49 @@ class ModelInfoResponse(BaseModel):
             topk=manifest.topk,
             sha256=manifest.sha256,
             corner_order=manifest.corner_order,
+            spine_chain=SpineChainInfo(
+                duplicate_iou_threshold=manifest.spine_chain.duplicate_iou_threshold,
+                duplicate_center_scale=manifest.spine_chain.duplicate_center_scale,
+                score_threshold=manifest.spine_chain.score_threshold,
+                score_weight=manifest.spine_chain.score_weight,
+                min_chain_len=manifest.spine_chain.min_chain_len,
+            ),
+        )
+
+
+class LAModelInfoResponse(BaseModel):
+    """Safe metadata for the deployed LA six-keypoint model."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    model_id: str
+    artifact_type: str
+    format_version: int = Field(ge=1)
+    backbone: str
+    input_size: int = Field(gt=0)
+    down_ratio: int = Field(gt=0)
+    peak_threshold: float = Field(ge=0.0, le=1.0)
+    topk: int = Field(gt=0)
+    sha256: str = Field(pattern=r"^[0-9a-fA-F]{64}$")
+    checkpoint_epoch: int = Field(gt=0)
+    keypoint_order: tuple[str, str, str, str, str, str]
+    spine_chain: SpineChainInfo
+
+    @classmethod
+    def from_manifest(cls, manifest: LAModelManifest) -> Self:
+        """Translate the LA manifest into its public response schema."""
+        return cls(
+            model_id=manifest.model_id,
+            artifact_type=manifest.artifact_type,
+            format_version=manifest.format_version,
+            backbone=manifest.backbone,
+            input_size=manifest.input_size,
+            down_ratio=manifest.down_ratio,
+            peak_threshold=manifest.peak_threshold,
+            topk=manifest.topk,
+            sha256=manifest.sha256,
+            checkpoint_epoch=manifest.checkpoint_epoch,
+            keypoint_order=manifest.keypoint_order,
             spine_chain=SpineChainInfo(
                 duplicate_iou_threshold=manifest.spine_chain.duplicate_iou_threshold,
                 duplicate_center_scale=manifest.spine_chain.duplicate_center_scale,

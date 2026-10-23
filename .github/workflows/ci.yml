@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Verify generated agent context
+        run: sha256sum --check .agent-context.sha256
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Verify OpenAPI export
+        run: uv run --frozen python scripts/export_openapi.py --check
+      - name: Lint
+        run: uv run --frozen ruff check .
+      - name: Test without real checkpoints
+        run: uv run --frozen pytest -m "not model"
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify generated agent context
+        run: sha256sum --check .agent-context.sha256
+      - name: Build API image
+        run: docker build -t spine-screening-api:ci .

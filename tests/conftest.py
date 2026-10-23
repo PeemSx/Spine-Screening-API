@@ -13,8 +13,12 @@ def client() -> TestClient:
     app.state.runtime_factory = lambda settings: UnavailableInferenceRuntime(
         "Inference runtime disabled for API boundary tests."
     )
+    app.state.la_runtime_factory = lambda settings: UnavailableInferenceRuntime(
+        "LA inference runtime disabled for API boundary tests."
+    )
     try:
         with TestClient(app) as test_client:
             yield test_client
     finally:
         del app.state.runtime_factory
+        del app.state.la_runtime_factory

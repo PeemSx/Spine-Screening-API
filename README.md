@@ -7,11 +7,12 @@ measurements or model outputs as diagnoses. Results require clinical review.
 
 ## Current status
 
-The API loads the compact HRNet-W18 CenterNet artifact once during application
-startup. It implements deterministic image preprocessing, landmark decoding,
-spine-chain candidate selection, Cobb geometry, and measurement-only vertebral
-morphology. Readiness becomes successful only after strict checkpoint loading
-and a full-size warm-up pass.
+The API loads independent AP/PA four-point and LA six-point HRNet-W18 CenterNet
+models during application startup. Both pipelines implement deterministic image
+preprocessing, landmark decoding, spine-chain candidate selection, geometry,
+and measurement-only vertebral morphology. Each pipeline advertises readiness
+only after strict checkpoint loading and a full-size warm-up pass. A failure in
+one model does not make the other pipeline unavailable.
 
 The demo API will accept one radiograph, process it synchronously, return the
 prediction, and retain neither the uploaded image nor the result.
@@ -37,6 +38,14 @@ The API documentation will be available at:
 - Readiness: `http://localhost:8000/api/v1/health/ready`
 - Model information: `http://localhost:8000/api/v1/model`
 - Prediction: `POST http://localhost:8000/api/v1/predictions`
+- LA readiness: `http://localhost:8000/api/v1/la/health/ready`
+- LA model information: `http://localhost:8000/api/v1/la/model`
+- LA six-point prediction: `POST http://localhost:8000/api/v1/la/predictions`
+
+The LA response returns `top_left`, `top_middle`, `top_right`, `bottom_left`,
+`bottom_middle`, and `bottom_right` for each candidate in original-image pixel
+coordinates. LA Cobb output is geometry agreement calculated from the four
+outer landmarks. It is not a clinical AP/PA Cobb measurement.
 
 ## Tests and linting
 
@@ -60,16 +69,19 @@ app/
       endpoints/
         health.py         Liveness and model readiness
         model.py          Safe deployed-model metadata
-        predictions.py    Single-radiograph HTTP workflow
+        predictions.py    AP/PA single-radiograph HTTP workflow
+        la.py             LA readiness, metadata, and prediction workflow
   schemas/
     health.py             Health response contracts
-    prediction.py         Landmark and measurement response contracts
+    prediction.py         AP/PA landmark and measurement response contracts
+    la_prediction.py      LA six-point response contracts
     error.py              Stable problem-detail response
     model.py              Public model-release contract
   services/
-    screening.py          Framework-independent use-case orchestration
+    screening.py          AP/PA use-case orchestration
+    la_screening.py       LA use-case and outer-landmark adapter
   inference/
-    runtime.py            Safe model lifecycle, warm-up, and inference
+    runtime.py            Safe AP/PA and LA lifecycle, warm-up, and inference
     manifest.py           Reproducible model artifact metadata
     model.py              HRNet/ResNet CenterNet architectures
     preprocessing.py      Decode, resize/pad, normalize, coordinate mapping
@@ -107,22 +119,27 @@ can still be supplied when an explicit override is preferred:
 ```text
 SPINE_API_ENVIRONMENT=production
 SPINE_API_MODEL_DEVICE=cpu
+SPINE_API_MODEL_PATH=app/weight/AP_PA_best_center_f1.pt
+SPINE_API_LA_MODEL_PATH=app/weight/LA_best_usable_recall.pt
 SPINE_API_INFERENCE_CONCURRENCY=1
 SPINE_API_LOG_LEVEL=INFO
 ```
 
-The compact checkpoint at `app/weight/best_center_f1.pt` is copied into the
-container. A successful deployment must return `200` from both:
+The AP/PA artifact at `app/weight/AP_PA_best_center_f1.pt` and LA checkpoint at
+`app/weight/LA_best_usable_recall.pt` are copied into the container. The
+concurrency limit is shared across both models. A fully successful deployment
+returns `200` from all readiness checks:
 
 - `GET /api/v1/health/live`
 - `GET /api/v1/health/ready`
+- `GET /api/v1/la/health/ready`
 
 Update the decoder's minimum peak-confidence cutoff without changing learned
 model tensors:
 
 ```powershell
 .venv\Scripts\python.exe scripts\update_peak_threshold.py `
-  app\weight\best_center_f1.pt 0.1
+  app\weight\AP_PA_best_center_f1.pt 0.1
 ```
 
 Rebuild the API image after changing the artifact so the deployed container

@@ -80,7 +80,7 @@ class ScreeningService:
         )
         cobb = calculate_cobb_angles(selection.selected)
         morphology = extract_chain_morphology(selection.selected)
-        warnings = _quality_warnings(
+        warnings = quality_warnings(
             selection.selected,
             raw_count=len(selection.raw),
             width=raw_result.original_width,
@@ -159,7 +159,7 @@ def _candidate_payload(candidate: SpineCandidate, rank: int) -> dict[str, Any]:
     }
 
 
-def _quality_warnings(
+def quality_warnings(
     selected: tuple[SpineCandidate, ...],
     *,
     raw_count: int,
@@ -189,4 +189,3 @@ def _quality_warnings(
     if not cobb_valid:
         warnings.append("Cobb geometry could not be calculated from the selected chain.")
     return warnings
-

@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 
 from app.inference.preprocessing import map_points_to_original, valid_center_mask
-from app.inference.types import RawPrediction, TransformMeta
+from app.inference.types import RawPrediction, RawSixPointPrediction, TransformMeta
 
 
 def nms_heatmap(heatmap: torch.Tensor, kernel: int = 3) -> torch.Tensor:
@@ -80,6 +80,61 @@ def decode_centernet_outputs(
     return decoded
 
 
+@torch.inference_mode()
+def decode_six_point_outputs(
+    outputs: dict[str, torch.Tensor],
+    *,
+    down_ratio: int,
+    peak_threshold: float,
+    topk: int,
+) -> list[RawSixPointPrediction]:
+    """Decode one-class center peaks and six ordered point offsets."""
+    heatmap = nms_heatmap(outputs["hm"])
+    batch_size, _, height, width = heatmap.shape
+    actual_topk = min(int(topk), height * width)
+    scores, indices = torch.topk(heatmap.view(batch_size, -1), actual_topk)
+    ys = torch.div(indices, width, rounding_mode="floor").float()
+    xs = (indices % width).float()
+    regression = _gather_feature_map(outputs["reg"], indices)
+    point_offsets = _gather_feature_map(outputs["wh"], indices).view(
+        batch_size,
+        actual_topk,
+        6,
+        2,
+    )
+    centers = torch.stack(
+        [xs + regression[:, :, 0], ys + regression[:, :, 1]],
+        dim=2,
+    )
+    keypoints = centers[:, :, None, :] - point_offsets
+    centers *= float(down_ratio)
+    keypoints *= float(down_ratio)
+
+    decoded = []
+    for batch_index in range(batch_size):
+        keep = scores[batch_index] >= float(peak_threshold)
+        decoded.append(
+            RawSixPointPrediction(
+                scores=scores[batch_index, keep]
+                .detach()
+                .cpu()
+                .numpy()
+                .astype(np.float32),
+                centers=centers[batch_index, keep]
+                .detach()
+                .cpu()
+                .numpy()
+                .astype(np.float32),
+                keypoints=keypoints[batch_index, keep]
+                .detach()
+                .cpu()
+                .numpy()
+                .astype(np.float32),
+            )
+        )
+    return decoded
+
+
 def decode_to_original(
     outputs: dict[str, torch.Tensor],
     meta: TransformMeta,
@@ -105,4 +160,32 @@ def decode_to_original(
         scores=prediction.scores[mask],
         centers=centers[mask],
         corners=corners[mask],
+    )
+
+
+def decode_six_points_to_original(
+    outputs: dict[str, torch.Tensor],
+    meta: TransformMeta,
+    *,
+    down_ratio: int,
+    peak_threshold: float,
+    topk: int,
+) -> RawSixPointPrediction:
+    """Decode one LA result and reverse resize/padding geometry."""
+    decoded = decode_six_point_outputs(
+        outputs,
+        down_ratio=down_ratio,
+        peak_threshold=peak_threshold,
+        topk=topk,
+    )
+    if len(decoded) != 1:
+        raise ValueError(f"Expected one decoded image, got {len(decoded)}")
+    prediction = decoded[0]
+    centers = map_points_to_original(prediction.centers, meta)
+    keypoints = map_points_to_original(prediction.keypoints, meta)
+    mask = valid_center_mask(centers, meta)
+    return RawSixPointPrediction(
+        scores=prediction.scores[mask],
+        centers=centers[mask],
+        keypoints=keypoints[mask],
     )

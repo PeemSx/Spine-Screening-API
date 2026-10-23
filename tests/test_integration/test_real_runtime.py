@@ -8,9 +8,11 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from app.inference.runtime import CenterNetRuntime
+from app.inference.runtime import CenterNetRuntime, LACenterNetRuntime
 from app.main import create_app
+from app.schemas.la_prediction import LAPredictionResponse
 from app.schemas.prediction import PredictionResponse
+from app.services.la_screening import LAScreeningService
 from app.services.screening import ScreeningService
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -31,7 +33,7 @@ def _encoded_test_image() -> bytes:
 )
 def test_real_checkpoint_runs_complete_pipeline() -> None:
     runtime = CenterNetRuntime(
-        PROJECT_ROOT / "app" / "weight" / "best_center_f1.pt",
+        PROJECT_ROOT / "app" / "weight" / "AP_PA_best_center_f1.pt",
         device_name="cpu",
     )
     service = ScreeningService(runtime, max_upload_bytes=20 * 1024 * 1024)
@@ -54,16 +56,52 @@ def test_real_checkpoint_runs_complete_pipeline() -> None:
     os.environ.get("SPINE_RUN_MODEL_TESTS") != "1",
     reason="Set SPINE_RUN_MODEL_TESTS=1 to execute the real checkpoint.",
 )
+def test_real_la_checkpoint_runs_complete_pipeline() -> None:
+    runtime = LACenterNetRuntime(
+        PROJECT_ROOT / "app" / "weight" / "LA_best_usable_recall.pt",
+        device_name="cpu",
+    )
+    service = LAScreeningService(runtime, max_upload_bytes=20 * 1024 * 1024)
+    try:
+        service.start()
+        response = LAPredictionResponse.model_validate(
+            service.predict(_encoded_test_image(), "image/png")
+        )
+    finally:
+        service.close()
+
+    assert response.model.backbone == "hrnet_w18"
+    assert response.model.checkpoint_epoch == 33
+    assert response.image.width == 256
+    assert response.image.height == 512
+    assert response.counts.raw >= response.counts.selected
+
+
+@pytest.mark.model
+@pytest.mark.skipif(
+    os.environ.get("SPINE_RUN_MODEL_TESTS") != "1",
+    reason="Set SPINE_RUN_MODEL_TESTS=1 to execute the real checkpoint.",
+)
 def test_real_checkpoint_is_available_through_http() -> None:
     with TestClient(create_app()) as client:
         readiness = client.get("/api/v1/health/ready")
+        la_readiness = client.get("/api/v1/la/health/ready")
         model = client.get("/api/v1/model")
+        la_model = client.get("/api/v1/la/model")
         prediction = client.post(
             "/api/v1/predictions",
             files={"image": ("radiograph.png", _encoded_test_image(), "image/png")},
         )
+        la_prediction = client.post(
+            "/api/v1/la/predictions",
+            files={"image": ("lateral.png", _encoded_test_image(), "image/png")},
+        )
 
     assert readiness.status_code == 200
+    assert la_readiness.status_code == 200
     assert model.status_code == 200
+    assert la_model.status_code == 200
     assert prediction.status_code == 200
+    assert la_prediction.status_code == 200
     assert prediction.json()["model"]["backbone"] == "hrnet_w18"
+    assert la_prediction.json()["model"]["checkpoint_epoch"] == 33

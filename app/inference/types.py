@@ -68,3 +68,38 @@ class RawInferenceResult:
     original_height: int
     media_type: str
 
+
+@dataclass(frozen=True, slots=True)
+class RawSixPointPrediction:
+    """LA CenterNet candidates with six ordered points in original pixels."""
+
+    scores: np.ndarray
+    centers: np.ndarray
+    keypoints: np.ndarray
+
+    def __post_init__(self) -> None:
+        if self.scores.ndim != 1:
+            raise ValueError("scores must have shape (N,)")
+        if self.centers.shape != (len(self.scores), 2):
+            raise ValueError("centers must have shape (N, 2)")
+        if self.keypoints.shape != (len(self.scores), 6, 2):
+            raise ValueError("keypoints must have shape (N, 6, 2)")
+        if not all(np.isfinite(values).all() for values in self.arrays()):
+            raise ValueError("Predictions must contain finite values")
+
+    @property
+    def count(self) -> int:
+        return int(len(self.scores))
+
+    def arrays(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        return self.scores, self.centers, self.keypoints
+
+
+@dataclass(frozen=True, slots=True)
+class RawSixPointInferenceResult:
+    """Six-point predictions with non-identifying image metadata."""
+
+    prediction: RawSixPointPrediction
+    original_width: int
+    original_height: int
+    media_type: str

@@ -59,3 +59,49 @@ class ModelManifest:
             raise ValueError("sha256 must contain hexadecimal characters") from exc
         if self.corner_order != ("TL", "TR", "BL", "BR"):
             raise ValueError("corner_order must be TL, TR, BL, BR")
+
+
+LA_KEYPOINT_ORDER = (
+    "top_left",
+    "top_middle",
+    "top_right",
+    "bottom_left",
+    "bottom_middle",
+    "bottom_right",
+)
+
+
+@dataclass(frozen=True, slots=True)
+class LAModelManifest:
+    """Reproducible runtime contract for the LA six-keypoint checkpoint."""
+
+    model_id: str
+    artifact_type: str
+    format_version: int
+    backbone: str
+    input_size: int
+    down_ratio: int
+    peak_threshold: float
+    topk: int
+    sha256: str
+    checkpoint_epoch: int
+    spine_chain: SpineChainConfig
+    keypoint_order: tuple[str, str, str, str, str, str] = LA_KEYPOINT_ORDER
+
+    def __post_init__(self) -> None:
+        if self.input_size <= 0 or self.down_ratio <= 0:
+            raise ValueError("input_size and down_ratio must be positive")
+        if self.input_size % self.down_ratio != 0:
+            raise ValueError("input_size must be divisible by down_ratio")
+        if not 0.0 <= self.peak_threshold <= 1.0:
+            raise ValueError("peak_threshold must be between zero and one")
+        if self.topk <= 0 or self.checkpoint_epoch <= 0:
+            raise ValueError("topk and checkpoint_epoch must be positive")
+        if len(self.sha256) != 64:
+            raise ValueError("sha256 must contain 64 hexadecimal characters")
+        try:
+            int(self.sha256, 16)
+        except ValueError as exc:
+            raise ValueError("sha256 must contain hexadecimal characters") from exc
+        if self.keypoint_order != LA_KEYPOINT_ORDER:
+            raise ValueError("Unexpected LA keypoint order")

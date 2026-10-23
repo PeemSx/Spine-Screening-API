@@ -1,0 +1,1469 @@
+{
+  "components": {
+    "schemas": {
+      "Body_create_prediction_api_v1_la_predictions_post": {
+        "properties": {
+          "image": {
+            "contentMediaType": "application/octet-stream",
+            "description": "Lateral raster radiograph",
+            "title": "Image",
+            "type": "string"
+          }
+        },
+        "required": [
+          "image"
+        ],
+        "title": "Body_create_prediction_api_v1_la_predictions_post",
+        "type": "object"
+      },
+      "Body_create_prediction_api_v1_predictions_post": {
+        "properties": {
+          "image": {
+            "contentMediaType": "application/octet-stream",
+            "description": "AP or PA raster radiograph",
+            "title": "Image",
+            "type": "string"
+          }
+        },
+        "required": [
+          "image"
+        ],
+        "title": "Body_create_prediction_api_v1_predictions_post",
+        "type": "object"
+      },
+      "CobbLine": {
+        "additionalProperties": false,
+        "description": "Endplate-axis line used by a Cobb measurement.",
+        "properties": {
+          "end": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "start": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "vertebra_candidate_id": {
+            "minimum": 0.0,
+            "title": "Vertebra Candidate Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "vertebra_candidate_id"
+        ],
+        "title": "CobbLine",
+        "type": "object"
+      },
+      "CobbResult": {
+        "additionalProperties": false,
+        "description": "Computational Cobb geometry; validity is not a clinical conclusion.",
+        "properties": {
+          "cobb_1_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cobb 1 Deg"
+          },
+          "cobb_2_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cobb 2 Deg"
+          },
+          "cobb_2_lines": {
+            "items": {
+              "$ref": "#/components/schemas/CobbLine"
+            },
+            "maxItems": 2,
+            "title": "Cobb 2 Lines",
+            "type": "array"
+          },
+          "cobb_3_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cobb 3 Deg"
+          },
+          "cobb_3_lines": {
+            "items": {
+              "$ref": "#/components/schemas/CobbLine"
+            },
+            "maxItems": 2,
+            "title": "Cobb 3 Lines",
+            "type": "array"
+          },
+          "major_lines": {
+            "items": {
+              "$ref": "#/components/schemas/CobbLine"
+            },
+            "maxItems": 2,
+            "title": "Major Lines",
+            "type": "array"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          },
+          "vertebra_count": {
+            "minimum": 0.0,
+            "title": "Vertebra Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "valid",
+          "vertebra_count"
+        ],
+        "title": "CobbResult",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "additionalProperties": false,
+        "description": "Process health response.",
+        "properties": {
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "ImageInfo": {
+        "additionalProperties": false,
+        "description": "Non-identifying properties of the decoded input image.",
+        "properties": {
+          "height": {
+            "exclusiveMinimum": 0.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "media_type": {
+            "title": "Media Type",
+            "type": "string"
+          },
+          "width": {
+            "exclusiveMinimum": 0.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "width",
+          "height",
+          "media_type"
+        ],
+        "title": "ImageInfo",
+        "type": "object"
+      },
+      "LACobbResult": {
+        "additionalProperties": false,
+        "description": "Outer-landmark geometry with an explicit non-clinical LA scope.",
+        "properties": {
+          "cobb_1_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cobb 1 Deg"
+          },
+          "cobb_2_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cobb 2 Deg"
+          },
+          "cobb_2_lines": {
+            "items": {
+              "$ref": "#/components/schemas/CobbLine"
+            },
+            "maxItems": 2,
+            "title": "Cobb 2 Lines",
+            "type": "array"
+          },
+          "cobb_3_deg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cobb 3 Deg"
+          },
+          "cobb_3_lines": {
+            "items": {
+              "$ref": "#/components/schemas/CobbLine"
+            },
+            "maxItems": 2,
+            "title": "Cobb 3 Lines",
+            "type": "array"
+          },
+          "major_lines": {
+            "items": {
+              "$ref": "#/components/schemas/CobbLine"
+            },
+            "maxItems": 2,
+            "title": "Major Lines",
+            "type": "array"
+          },
+          "scope": {
+            "const": "LA geometry agreement calculated from the four outer landmarks; not a clinical AP/PA Cobb measurement.",
+            "default": "LA geometry agreement calculated from the four outer landmarks; not a clinical AP/PA Cobb measurement.",
+            "title": "Scope",
+            "type": "string"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          },
+          "vertebra_count": {
+            "minimum": 0.0,
+            "title": "Vertebra Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "valid",
+          "vertebra_count"
+        ],
+        "title": "LACobbResult",
+        "type": "object"
+      },
+      "LAModelInfoResponse": {
+        "additionalProperties": false,
+        "description": "Safe metadata for the deployed LA six-keypoint model.",
+        "properties": {
+          "artifact_type": {
+            "title": "Artifact Type",
+            "type": "string"
+          },
+          "backbone": {
+            "title": "Backbone",
+            "type": "string"
+          },
+          "checkpoint_epoch": {
+            "exclusiveMinimum": 0.0,
+            "title": "Checkpoint Epoch",
+            "type": "integer"
+          },
+          "down_ratio": {
+            "exclusiveMinimum": 0.0,
+            "title": "Down Ratio",
+            "type": "integer"
+          },
+          "format_version": {
+            "minimum": 1.0,
+            "title": "Format Version",
+            "type": "integer"
+          },
+          "input_size": {
+            "exclusiveMinimum": 0.0,
+            "title": "Input Size",
+            "type": "integer"
+          },
+          "keypoint_order": {
+            "maxItems": 6,
+            "minItems": 6,
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Keypoint Order",
+            "type": "array"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "peak_threshold": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Peak Threshold",
+            "type": "number"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-fA-F]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "spine_chain": {
+            "$ref": "#/components/schemas/SpineChainInfo"
+          },
+          "topk": {
+            "exclusiveMinimum": 0.0,
+            "title": "Topk",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model_id",
+          "artifact_type",
+          "format_version",
+          "backbone",
+          "input_size",
+          "down_ratio",
+          "peak_threshold",
+          "topk",
+          "sha256",
+          "checkpoint_epoch",
+          "keypoint_order",
+          "spine_chain"
+        ],
+        "title": "LAModelInfoResponse",
+        "type": "object"
+      },
+      "LAPredictionResponse": {
+        "additionalProperties": false,
+        "description": "Complete stateless result for one lateral radiograph.",
+        "properties": {
+          "clinical_review_required": {
+            "const": true,
+            "default": true,
+            "title": "Clinical Review Required",
+            "type": "boolean"
+          },
+          "cobb": {
+            "$ref": "#/components/schemas/LACobbResult"
+          },
+          "coordinate_origin": {
+            "const": "top_left",
+            "default": "top_left",
+            "title": "Coordinate Origin",
+            "type": "string"
+          },
+          "coordinate_space": {
+            "const": "original_image_pixels",
+            "default": "original_image_pixels",
+            "title": "Coordinate Space",
+            "type": "string"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/PredictionCounts"
+          },
+          "disclaimer": {
+            "default": "Research screening-support measurements only. These outputs are not a diagnosis and require clinical interpretation.",
+            "title": "Disclaimer",
+            "type": "string"
+          },
+          "image": {
+            "$ref": "#/components/schemas/ImageInfo"
+          },
+          "keypoint_order": {
+            "default": [
+              "top_left",
+              "top_middle",
+              "top_right",
+              "bottom_left",
+              "bottom_middle",
+              "bottom_right"
+            ],
+            "maxItems": 6,
+            "minItems": 6,
+            "prefixItems": [
+              {
+                "const": "top_left",
+                "type": "string"
+              },
+              {
+                "const": "top_middle",
+                "type": "string"
+              },
+              {
+                "const": "top_right",
+                "type": "string"
+              },
+              {
+                "const": "bottom_left",
+                "type": "string"
+              },
+              {
+                "const": "bottom_middle",
+                "type": "string"
+              },
+              {
+                "const": "bottom_right",
+                "type": "string"
+              }
+            ],
+            "title": "Keypoint Order",
+            "type": "array"
+          },
+          "measurement_landmarks": {
+            "default": [
+              "top_left",
+              "top_right",
+              "bottom_left",
+              "bottom_right"
+            ],
+            "maxItems": 4,
+            "minItems": 4,
+            "prefixItems": [
+              {
+                "const": "top_left",
+                "type": "string"
+              },
+              {
+                "const": "top_right",
+                "type": "string"
+              },
+              {
+                "const": "bottom_left",
+                "type": "string"
+              },
+              {
+                "const": "bottom_right",
+                "type": "string"
+              }
+            ],
+            "title": "Measurement Landmarks",
+            "type": "array"
+          },
+          "model": {
+            "$ref": "#/components/schemas/LAModelInfoResponse"
+          },
+          "morphology": {
+            "items": {
+              "$ref": "#/components/schemas/MorphologyFeature"
+            },
+            "title": "Morphology",
+            "type": "array"
+          },
+          "prediction_id": {
+            "format": "uuid",
+            "title": "Prediction Id",
+            "type": "string"
+          },
+          "projection": {
+            "const": "LA",
+            "default": "LA",
+            "title": "Projection",
+            "type": "string"
+          },
+          "raw_predictions": {
+            "items": {
+              "$ref": "#/components/schemas/LAVertebraPrediction"
+            },
+            "title": "Raw Predictions",
+            "type": "array"
+          },
+          "selected_vertebrae": {
+            "items": {
+              "$ref": "#/components/schemas/LAVertebraPrediction"
+            },
+            "title": "Selected Vertebrae",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "prediction_id",
+          "model",
+          "image",
+          "counts",
+          "cobb"
+        ],
+        "title": "LAPredictionResponse",
+        "type": "object"
+      },
+      "LAVertebraPrediction": {
+        "additionalProperties": false,
+        "description": "One raw or selected LA vertebral candidate.",
+        "properties": {
+          "candidate_id": {
+            "minimum": 0.0,
+            "title": "Candidate Id",
+            "type": "integer"
+          },
+          "center": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "detector_score": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Detector Score",
+            "type": "number"
+          },
+          "keypoints": {
+            "$ref": "#/components/schemas/SixKeypoints"
+          },
+          "rank": {
+            "minimum": 1.0,
+            "title": "Rank",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "rank",
+          "detector_score",
+          "center",
+          "keypoints"
+        ],
+        "title": "LAVertebraPrediction",
+        "type": "object"
+      },
+      "ModelInfoResponse": {
+        "additionalProperties": false,
+        "description": "Safe model metadata exposed without filesystem or training details.",
+        "properties": {
+          "artifact_type": {
+            "title": "Artifact Type",
+            "type": "string"
+          },
+          "backbone": {
+            "title": "Backbone",
+            "type": "string"
+          },
+          "corner_order": {
+            "maxItems": 4,
+            "minItems": 4,
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Corner Order",
+            "type": "array"
+          },
+          "down_ratio": {
+            "exclusiveMinimum": 0.0,
+            "title": "Down Ratio",
+            "type": "integer"
+          },
+          "format_version": {
+            "minimum": 1.0,
+            "title": "Format Version",
+            "type": "integer"
+          },
+          "input_size": {
+            "exclusiveMinimum": 0.0,
+            "title": "Input Size",
+            "type": "integer"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "peak_threshold": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Peak Threshold",
+            "type": "number"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-fA-F]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "spine_chain": {
+            "$ref": "#/components/schemas/SpineChainInfo"
+          },
+          "topk": {
+            "exclusiveMinimum": 0.0,
+            "title": "Topk",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model_id",
+          "artifact_type",
+          "format_version",
+          "backbone",
+          "input_size",
+          "down_ratio",
+          "peak_threshold",
+          "topk",
+          "sha256",
+          "corner_order",
+          "spine_chain"
+        ],
+        "title": "ModelInfoResponse",
+        "type": "object"
+      },
+      "MorphologyFeature": {
+        "additionalProperties": false,
+        "description": "Measurement-only geometry for one selected vertebra.",
+        "properties": {
+          "candidate_id": {
+            "minimum": 0.0,
+            "title": "Candidate Id",
+            "type": "integer"
+          },
+          "detector_score": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Detector Score",
+            "type": "number"
+          },
+          "endplate_nonparallel_deg": {
+            "title": "Endplate Nonparallel Deg",
+            "type": "number"
+          },
+          "height_asymmetry_fraction": {
+            "title": "Height Asymmetry Fraction",
+            "type": "number"
+          },
+          "height_ratio_to_neighbors": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Ratio To Neighbors"
+          },
+          "inferior_endplate_angle_deg": {
+            "title": "Inferior Endplate Angle Deg",
+            "type": "number"
+          },
+          "inferior_width_px": {
+            "title": "Inferior Width Px",
+            "type": "number"
+          },
+          "left_height_px": {
+            "title": "Left Height Px",
+            "type": "number"
+          },
+          "left_right_height_ratio": {
+            "title": "Left Right Height Ratio",
+            "type": "number"
+          },
+          "mean_height_px": {
+            "title": "Mean Height Px",
+            "type": "number"
+          },
+          "neighbor_reference_height_px": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neighbor Reference Height Px"
+          },
+          "next_center_spacing_px": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Center Spacing Px"
+          },
+          "previous_center_spacing_px": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Center Spacing Px"
+          },
+          "rank": {
+            "minimum": 1.0,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "relative_height_deviation": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relative Height Deviation"
+          },
+          "right_height_px": {
+            "title": "Right Height Px",
+            "type": "number"
+          },
+          "superior_endplate_angle_deg": {
+            "title": "Superior Endplate Angle Deg",
+            "type": "number"
+          },
+          "superior_width_px": {
+            "title": "Superior Width Px",
+            "type": "number"
+          },
+          "width_height_ratio": {
+            "title": "Width Height Ratio",
+            "type": "number"
+          }
+        },
+        "required": [
+          "rank",
+          "candidate_id",
+          "detector_score",
+          "superior_width_px",
+          "inferior_width_px",
+          "left_height_px",
+          "right_height_px",
+          "mean_height_px",
+          "left_right_height_ratio",
+          "height_asymmetry_fraction",
+          "width_height_ratio",
+          "superior_endplate_angle_deg",
+          "inferior_endplate_angle_deg",
+          "endplate_nonparallel_deg"
+        ],
+        "title": "MorphologyFeature",
+        "type": "object"
+      },
+      "OrderedCorners": {
+        "additionalProperties": false,
+        "description": "Canonical vertebral landmark order: TL, TR, BL, BR.",
+        "properties": {
+          "bottom_left": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "bottom_right": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "top_left": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "top_right": {
+            "$ref": "#/components/schemas/Point"
+          }
+        },
+        "required": [
+          "top_left",
+          "top_right",
+          "bottom_left",
+          "bottom_right"
+        ],
+        "title": "OrderedCorners",
+        "type": "object"
+      },
+      "Point": {
+        "additionalProperties": false,
+        "description": "A floating-point point in original-image pixel coordinates.",
+        "properties": {
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "Point",
+        "type": "object"
+      },
+      "PredictionCounts": {
+        "additionalProperties": false,
+        "description": "Keep detector and spine-chain counts visibly distinct.",
+        "properties": {
+          "deduplicated": {
+            "minimum": 0.0,
+            "title": "Deduplicated",
+            "type": "integer"
+          },
+          "raw": {
+            "minimum": 0.0,
+            "title": "Raw",
+            "type": "integer"
+          },
+          "selected": {
+            "minimum": 0.0,
+            "title": "Selected",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "raw",
+          "deduplicated",
+          "selected"
+        ],
+        "title": "PredictionCounts",
+        "type": "object"
+      },
+      "PredictionResponse": {
+        "additionalProperties": false,
+        "description": "Complete stateless screening-support result for one radiograph.",
+        "properties": {
+          "clinical_review_required": {
+            "const": true,
+            "default": true,
+            "title": "Clinical Review Required",
+            "type": "boolean"
+          },
+          "cobb": {
+            "$ref": "#/components/schemas/CobbResult"
+          },
+          "coordinate_origin": {
+            "const": "top_left",
+            "default": "top_left",
+            "title": "Coordinate Origin",
+            "type": "string"
+          },
+          "coordinate_space": {
+            "const": "original_image_pixels",
+            "default": "original_image_pixels",
+            "title": "Coordinate Space",
+            "type": "string"
+          },
+          "corner_order": {
+            "default": [
+              "TL",
+              "TR",
+              "BL",
+              "BR"
+            ],
+            "maxItems": 4,
+            "minItems": 4,
+            "prefixItems": [
+              {
+                "const": "TL",
+                "type": "string"
+              },
+              {
+                "const": "TR",
+                "type": "string"
+              },
+              {
+                "const": "BL",
+                "type": "string"
+              },
+              {
+                "const": "BR",
+                "type": "string"
+              }
+            ],
+            "title": "Corner Order",
+            "type": "array"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/PredictionCounts"
+          },
+          "disclaimer": {
+            "default": "Research screening-support measurements only. These outputs are not a diagnosis and require clinical interpretation.",
+            "title": "Disclaimer",
+            "type": "string"
+          },
+          "image": {
+            "$ref": "#/components/schemas/ImageInfo"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelInfoResponse"
+          },
+          "morphology": {
+            "items": {
+              "$ref": "#/components/schemas/MorphologyFeature"
+            },
+            "title": "Morphology",
+            "type": "array"
+          },
+          "prediction_id": {
+            "format": "uuid",
+            "title": "Prediction Id",
+            "type": "string"
+          },
+          "raw_predictions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VertebraPrediction"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Predictions"
+          },
+          "selected_vertebrae": {
+            "items": {
+              "$ref": "#/components/schemas/VertebraPrediction"
+            },
+            "title": "Selected Vertebrae",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "prediction_id",
+          "model",
+          "image",
+          "counts",
+          "cobb"
+        ],
+        "title": "PredictionResponse",
+        "type": "object"
+      },
+      "ProblemDetail": {
+        "additionalProperties": false,
+        "description": "RFC 9457-style error body with a stable machine-readable code.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "instance": {
+            "title": "Instance",
+            "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "status": {
+            "maximum": 599.0,
+            "minimum": 400.0,
+            "title": "Status",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "code",
+          "instance"
+        ],
+        "title": "ProblemDetail",
+        "type": "object"
+      },
+      "ReadinessResponse": {
+        "additionalProperties": false,
+        "description": "Response returned only after the model runtime is ready.",
+        "properties": {
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "status": {
+            "const": "ready",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "model_id"
+        ],
+        "title": "ReadinessResponse",
+        "type": "object"
+      },
+      "SixKeypoints": {
+        "additionalProperties": false,
+        "description": "Canonical LA vertebral landmark order.",
+        "properties": {
+          "bottom_left": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "bottom_middle": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "bottom_right": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "top_left": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "top_middle": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "top_right": {
+            "$ref": "#/components/schemas/Point"
+          }
+        },
+        "required": [
+          "top_left",
+          "top_middle",
+          "top_right",
+          "bottom_left",
+          "bottom_middle",
+          "bottom_right"
+        ],
+        "title": "SixKeypoints",
+        "type": "object"
+      },
+      "SpineChainInfo": {
+        "additionalProperties": false,
+        "description": "Public deployed spine-chain parameters.",
+        "properties": {
+          "duplicate_center_scale": {
+            "minimum": 0.0,
+            "title": "Duplicate Center Scale",
+            "type": "number"
+          },
+          "duplicate_iou_threshold": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Duplicate Iou Threshold",
+            "type": "number"
+          },
+          "min_chain_len": {
+            "exclusiveMinimum": 0.0,
+            "title": "Min Chain Len",
+            "type": "integer"
+          },
+          "score_threshold": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Score Threshold",
+            "type": "number"
+          },
+          "score_weight": {
+            "exclusiveMinimum": 0.0,
+            "title": "Score Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "duplicate_iou_threshold",
+          "duplicate_center_scale",
+          "score_threshold",
+          "score_weight",
+          "min_chain_len"
+        ],
+        "title": "SpineChainInfo",
+        "type": "object"
+      },
+      "VertebraPrediction": {
+        "additionalProperties": false,
+        "description": "One detector candidate or selected spine-chain vertebra.",
+        "properties": {
+          "candidate_id": {
+            "minimum": 0.0,
+            "title": "Candidate Id",
+            "type": "integer"
+          },
+          "center": {
+            "$ref": "#/components/schemas/Point"
+          },
+          "corners": {
+            "$ref": "#/components/schemas/OrderedCorners"
+          },
+          "detector_score": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Detector Score",
+            "type": "number"
+          },
+          "rank": {
+            "minimum": 1.0,
+            "title": "Rank",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "rank",
+          "detector_score",
+          "center",
+          "corners"
+        ],
+        "title": "VertebraPrediction",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Research and screening-support API. Outputs are not diagnoses and require clinical review.",
+    "title": "Spine Screening API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/health/live": {
+      "get": {
+        "description": "Confirm that the API process can serve requests.",
+        "operationId": "liveness_api_v1_health_live_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Check process liveness",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/health/ready": {
+      "get": {
+        "description": "Confirm that the shared model runtime can accept inference work.",
+        "operationId": "readiness_api_v1_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Check model readiness",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/la/health/ready": {
+      "get": {
+        "description": "Confirm that the LA runtime can accept inference work.",
+        "operationId": "readiness_api_v1_la_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Check LA model readiness",
+        "tags": [
+          "la"
+        ]
+      }
+    },
+    "/api/v1/la/model": {
+      "get": {
+        "description": "Expose reproducibility metadata without internal checkpoint paths.",
+        "operationId": "model_info_api_v1_la_model_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LAModelInfoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Describe the deployed LA six-keypoint model",
+        "tags": [
+          "la"
+        ]
+      }
+    },
+    "/api/v1/la/predictions": {
+      "post": {
+        "description": "Validate one upload and run blocking LA inference outside the event loop.",
+        "operationId": "create_prediction_api_v1_la_predictions_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_prediction_api_v1_la_predictions_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LAPredictionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Screen one lateral radiograph with six landmarks",
+        "tags": [
+          "la"
+        ]
+      }
+    },
+    "/api/v1/model": {
+      "get": {
+        "description": "Expose reproducibility metadata without internal paths or training state.",
+        "operationId": "model_info_api_v1_model_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfoResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Describe the deployed model",
+        "tags": [
+          "model"
+        ]
+      }
+    },
+    "/api/v1/predictions": {
+      "post": {
+        "description": "Validate one upload and run blocking inference outside the event loop.",
+        "operationId": "create_prediction_api_v1_predictions_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_prediction_api_v1_predictions_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Screen one radiograph",
+        "tags": [
+          "predictions"
+        ]
+      }
+    }
+  }
+}
