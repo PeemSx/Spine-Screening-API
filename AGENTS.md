@@ -1,6 +1,6 @@
 <!-- GENERATED FILE. DO NOT EDIT DIRECTLY.
 Sources: workspace AGENTS.md and docs/agent-overlays/api.md
-source-sha256: 4822fbdcaabb8de3195b8ce23b1f4d0760b9e6f4d95ccf190c20c1dbce499114
+source-sha256: 1c2a2247c7ca00d5a2ff8b918227a893a4811c73400b879a206c3634728f3ea3
 Regenerate from the workspace root with: make sync-context
 -->
 
@@ -47,6 +47,12 @@ Concurrent agents must have mutually exclusive file ownership. Serialize tasks t
 same files or public contract. For cross-stack changes, stabilize and export the backend OpenAPI
 contract before editing frontend consumers. Public API, landmark order, coordinate transforms,
 model loading, clinical wording, and cross-repository changes require independent verification.
+
+Use cost-aware model routing when the active Codex runtime supports per-agent model overrides.
+Keep planning, integration, high-risk decisions, and final review with the capable lead model
+(currently the Sol tier). Prefer the cost-efficient Luna tier at medium reasoning for bounded
+implementation tasks. Do not delegate small tasks merely to switch models, and never reduce the
+required verification because a cheaper worker performed the implementation.
 
 Every delegated task must state its goal, acceptance criteria, allowed repositories and files,
 required documents, interface impact, validation commands, prohibited actions, and risks. A
